@@ -1,0 +1,295 @@
+local m1event = game.ReplicatedStorage:WaitForChild("m1")
+local angelparticles = game.ReplicatedStorage:WaitForChild("Particles")
+local playerLastClickTime = {}
+local cooldownTime = 1
+local animationTime = 1
+local animationTimeangel = 0.6
+
+local punchStates = {}
+local RagdollHandler = game:GetService("ServerScriptService").RagdollHandeler
+local ragdoll = require(RagdollHandler.Ragdoll)
+local kb = require(RagdollHandler.KnockBack)
+
+local db = {}
+
+local initialStateSet = {}
+
+local function initializePunchState(player)
+	if not initialStateSet[player] then
+		punchStates[player] = 1
+		initialStateSet[player] = true
+
+		local function resetPunchState()
+			if initialStateSet[player] then
+				punchStates[player] = 1
+				delay(5, resetPunchState)
+			end
+		end
+
+		delay(5, resetPunchState)
+	end
+end
+
+local function applyRecoil(char, recoilForce,owner)
+	local humanoidRootPart = char:WaitForChild("HumanoidRootPart")
+	local humanoidRootPart1 = owner:WaitForChild("HumanoidRootPart")
+
+		local recoilDirection = (humanoidRootPart1.CFrame.LookVector ).unit
+
+		kb.ApplyKnockback(humanoidRootPart, recoilDirection, recoilForce)
+
+
+end
+local function loadAnimation(player, animationId)
+	local character = player.Character
+	if character then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			local animator = humanoid:FindFirstChildOfClass("Animator")
+			if animator then
+				local animation = Instance.new("Animation")
+				animation.AnimationId = "rbxassetid://" .. animationId
+				return animator:LoadAnimation(animation)
+			end
+		end
+	end
+	return nil
+end
+local function emitparticlesangel(pos)
+	local partic=angelparticles:Clone()
+	partic.Parent=workspace
+	partic.Anchored=true
+	partic.Position=pos
+	local hit=partic.HIT
+	task.delay(0.15,function()
+	hit.a1:Emit(2)
+	hit.a2:Emit(2)
+	hit.a3:Emit(2)
+	hit.a4:Emit(2)
+	hit.a5:Emit(2)
+	end)
+	task.delay(1,function()
+    partic:Destroy()
+	end)
+end
+local animationId1 = "18377948618" 
+local animationId2 = "18378029284" 
+local animationId3 = "18378136225" 
+
+local animationId12 = "18384056681" 
+local animationId22 = "18384054036" 
+local animationId32 = "18384047922" 
+
+function m1love(player)
+	if player.Character.stunned.Value==true then return end
+	local currentTime = tick()
+	local lastClickTime = playerLastClickTime[player] or 0
+
+	if currentTime - lastClickTime >= cooldownTime then
+		playerLastClickTime[player] = currentTime
+
+		if punchStates[player] == nil then
+			punchStates[player] = 1
+		end
+		local function OnHitBoxTouched(OtherHitBox)
+		 local humanoid = OtherHitBox.Parent:FindFirstChildOfClass("Humanoid")
+		 local touchedPlayer = game.Players:GetPlayerFromCharacter(OtherHitBox.Parent)
+
+		 if humanoid then
+		  if touchedPlayer and touchedPlayer ~= player then
+			
+			if punchStates[player] == 3 then
+
+			    applyRecoil(OtherHitBox.Parent,50,player.Character)
+				OtherHitBox.Parent.stunned.Value=true
+				task.delay(1,function()
+					OtherHitBox.Parent.stunned.Value=false
+
+				end)
+				humanoid:TakeDamage(1)
+
+			end
+			if punchStates[player] == 1 then
+
+				humanoid:TakeDamage(1)
+				
+				OtherHitBox.Parent.HumanoidRootPart.Anchored=true
+				OtherHitBox.Parent.stunned.Value=true
+				task.delay(1,function()
+					OtherHitBox.Parent.stunned.Value=false
+				end)
+				task.delay(0.5, function()
+					OtherHitBox.Parent.HumanoidRootPart.Anchored=false
+				end)
+			end
+			if punchStates[player] == 2 then
+
+						humanoid:TakeDamage(1)
+
+						OtherHitBox.Parent.HumanoidRootPart.Anchored=true
+						OtherHitBox.Parent.stunned.Value=true
+						task.delay(1,function()
+							OtherHitBox.Parent.stunned.Value=false
+						end)
+						task.delay(0.5, function()
+							OtherHitBox.Parent.HumanoidRootPart.Anchored=false
+						end)
+					end
+		  end
+		  end
+		end
+		local connection=player.Character.hitbox.Touched:Connect(OnHitBoxTouched)
+		task.delay(0.3,function()
+			connection:Disconnect()
+		end)
+		if punchStates[player] == 3 then
+			local animation = loadAnimation(player, animationId3)
+			if animation then
+				animation:Play()
+				delay(animationTime, function()
+					animation:Stop()
+					punchStates[player] = 1
+				end)
+			end
+		end	
+		if punchStates[player] == 2 then
+			local animation = loadAnimation(player, animationId2)
+			if animation then
+				animation:Play()
+				delay(animationTime, function()
+					animation:Stop()
+					punchStates[player] = 3
+				end)
+			end
+		end	
+		if punchStates[player] == 1 then
+			local animation = loadAnimation(player, animationId1)
+			if animation then
+				animation:Play()
+				delay(animationTime, function()
+					animation:Stop()
+					punchStates[player] = 2
+				end)
+			end
+		end
+
+	end
+end
+function m1angel(player)
+	if player.Character.stunned.Value==true then return end
+	local currentTime = tick()
+	local lastClickTime = playerLastClickTime[player] or 0
+
+	if currentTime - lastClickTime >= cooldownTime then
+		playerLastClickTime[player] = currentTime
+
+		if punchStates[player] == nil then
+			punchStates[player] = 1
+		end
+		local hitPlayers = {}
+
+		local function OnHitBoxTouched(OtherHitBox)
+			local humanoid = OtherHitBox.Parent:FindFirstChildOfClass("Humanoid")
+			local touchedPlayer = game.Players:GetPlayerFromCharacter(OtherHitBox.Parent)
+
+			if humanoid then
+				if touchedPlayer and touchedPlayer ~= player then
+					if hitPlayers[touchedPlayer] then
+						return
+					end
+
+					hitPlayers[touchedPlayer] = true
+
+					if punchStates[player] == 3 then
+						local pos = (player.Character.HumanoidRootPart.Position + OtherHitBox.Parent.HumanoidRootPart.Position) / 2				
+						emitparticlesangel(pos)
+
+		
+						applyRecoil(OtherHitBox.Parent, 50, player.Character)
+						OtherHitBox.Parent.stunned.Value = true
+						task.delay(1, function()
+							OtherHitBox.Parent.stunned.Value = false
+						end)
+						humanoid:TakeDamage(5)
+
+					elseif punchStates[player] == 1 then
+						local pos = (player.Character.HumanoidRootPart.Position + OtherHitBox.Parent.HumanoidRootPart.Position) / 2				
+						emitparticlesangel(pos)
+						humanoid:TakeDamage(5)
+
+						OtherHitBox.Parent.Humanoid.WalkSpeed = 6
+						OtherHitBox.Parent.stunned.Value = true
+						task.delay(1, function()
+							OtherHitBox.Parent.stunned.Value = false
+						end)
+						task.delay(0.5, function()
+							OtherHitBox.Parent.Humanoid.WalkSpeed = 16
+						end)
+					elseif punchStates[player] == 2 then
+						local pos = (player.Character.HumanoidRootPart.Position + OtherHitBox.Parent.HumanoidRootPart.Position) / 2				
+						emitparticlesangel(pos)
+						humanoid:TakeDamage(5)
+
+						OtherHitBox.Parent.Humanoid.WalkSpeed = 6
+						OtherHitBox.Parent.stunned.Value = true
+						task.delay(1, function()
+							OtherHitBox.Parent.stunned.Value = false
+						end)
+						task.delay(0.5, function()
+							OtherHitBox.Parent.Humanoid.WalkSpeed = 16
+						end)
+					end
+				end
+			end
+		end
+
+		local connection = player.Character.hitbox.Touched:Connect(OnHitBoxTouched)
+
+		task.delay(0.3,function()
+			connection:Disconnect()
+		end)
+		if punchStates[player] == 3 then
+			local animation = loadAnimation(player, animationId32)
+			if animation then
+				animation:Play()
+				delay(animationTimeangel, function()
+					animation:Stop()
+					punchStates[player] = 1
+				end)
+			end
+		end	
+		if punchStates[player] == 2 then
+			local animation = loadAnimation(player, animationId22)
+			if animation then
+				animation:Play()
+				delay(animationTimeangel, function()
+					animation:Stop()
+					punchStates[player] = 3
+				end)
+			end
+		end	
+		if punchStates[player] == 1 then
+			local animation = loadAnimation(player, animationId12)
+			if animation then
+				animation:Play()
+				delay(animationTimeangel, function()
+					animation:Stop()
+					punchStates[player] = 2
+				end)
+			end
+		end
+
+	end
+end
+m1event.OnServerEvent:Connect(function(player)
+	local power=player.Character:FindFirstChild("Power").Value
+	initializePunchState(player)
+
+	if power == "angel" then
+		m1angel(player)
+	end
+	if power == "love" then
+		m1love(player)
+
+	end
+end)

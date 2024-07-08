@@ -1,0 +1,87 @@
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RemoteEvent = ReplicatedStorage:WaitForChild("PullPlayerEvent")
+
+function pullPlayer(player, hitPlayer)
+	print("Server: pullPlayer function called for player:", player.Name)
+	print("Server: pullPlayer function called for player:", hitPlayer.Name)
+
+	local character = hitPlayer.Character
+	if character then
+		local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+		if humanoidRootPart then
+			local myCharacter = player.Character
+			if myCharacter then
+
+				local humanoid = myCharacter:FindFirstChildOfClass("Humanoid")
+
+				local HeartLeftA = ReplicatedStorage.HeartLeftArm:Clone()
+				HeartLeftA.Parent = myCharacter
+				HeartLeftA.Position = myCharacter.HumanoidRootPart.Position - Vector3.new(0, -3, 0)
+				HeartLeftA.Orientation= myCharacter.HumanoidRootPart.Orientation
+				HeartLeftA.Anchored=true
+				local beam = HeartLeftA.Beam
+
+				local VictimPull = ReplicatedStorage.VictimPullHeart:Clone()
+				VictimPull.Parent = character.Head
+				VictimPull.Position = character.Head.Position
+				VictimPull.Weld.Part1 = character.Head
+				beam.Attachment1=VictimPull.Attachment
+				local animationId = "rbxassetid://18238171690"
+				local animation = Instance.new("Animation")
+				animation.AnimationId = animationId
+
+				local animTrack = humanoid:LoadAnimation(animation)
+				animTrack:Play()
+				animTrack.Ended:Connect(function()
+					animTrack:Destroy()
+				end)
+				local targetPosition = HeartLeftA.Position - Vector3.new(0, 3, 0)
+
+				local speed = 30 
+				
+				while (humanoidRootPart.Position - targetPosition).Magnitude > 1 do
+					local direction = (targetPosition - humanoidRootPart.Position).Unit
+					humanoidRootPart.CFrame = humanoidRootPart.CFrame + direction * speed * 0.03
+					wait(0.03) 
+				end
+				character.stunned.Value=true
+
+				character.HumanoidRootPart.Anchored=true
+				task.delay(1,function()
+					character.stunned.Value=false
+
+					character.HumanoidRootPart.Anchored=false
+				end)
+				HeartLeftA:Destroy()
+				
+				VictimPull:Destroy()
+
+				print("Server: Pulled player", hitPlayer.Name, "towards", player.Name)
+			else
+				print("Server: My character not found for player:", player.Name)
+			end
+		else
+			print("Server: HumanoidRootPart not found in character:", character.Name)
+		end
+	else
+		print("Server: Character not found for hit player:", hitPlayer.Name)
+	end
+end
+
+cooldowns = {}
+
+RemoteEvent.OnServerEvent:Connect(function(player, hitPosition, hitPlayer)
+	if cooldowns[player.UserId] and tick() - cooldowns[player.UserId] < 1 then
+		return  
+	end
+
+	cooldowns[player.UserId] = tick()
+	
+	print("Server: PullPlayerEvent fired on server")
+	local pow=player.Character:FindFirstChild("Power").Value
+	if pow == "love" then
+	pullPlayer(player, hitPlayer)
+	else
+		return
+	end
+end)
